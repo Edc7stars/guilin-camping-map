@@ -1,0 +1,876 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>桂林露营地管理工具</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Noto Sans SC', -apple-system, sans-serif;
+            background: #f5f5f5;
+            color: #333;
+            min-height: 100vh;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #2C3E50 0%, #34495E 100%);
+            color: white;
+            padding: 30px;
+            border-radius: 15px;
+            margin-bottom: 30px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 28px;
+            margin-bottom: 8px;
+        }
+
+        .header p {
+            opacity: 0.9;
+            font-size: 14px;
+        }
+
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .stat-card {
+            background: white;
+            padding: 25px;
+            border-radius: 12px;
+            text-align: center;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+
+        .stat-number {
+            font-size: 36px;
+            font-weight: 700;
+            color: #3498DB;
+            margin-bottom: 5px;
+        }
+
+        .stat-label {
+            font-size: 14px;
+            color: #7F8C8D;
+        }
+
+        .section {
+            background: white;
+            padding: 25px;
+            border-radius: 12px;
+            margin-bottom: 30px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+
+        .section-title {
+            font-size: 18px;
+            font-weight: 600;
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #e9ecef;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .import-area {
+            border: 3px dashed #dee2e6;
+            border-radius: 12px;
+            padding: 40px;
+            text-align: center;
+            margin-bottom: 20px;
+            transition: all 0.3s;
+            cursor: pointer;
+        }
+
+        .import-area:hover {
+            border-color: #3498DB;
+            background: #EBF5FB;
+        }
+
+        .import-area.dragover {
+            border-color: #27AE60;
+            background: #E8F8F5;
+        }
+
+        .import-icon {
+            font-size: 48px;
+            margin-bottom: 15px;
+        }
+
+        .import-text {
+            font-size: 16px;
+            color: #6c757d;
+            margin-bottom: 5px;
+        }
+
+        .import-hint {
+            font-size: 12px;
+            color: #adb5bd;
+        }
+
+        textarea {
+            width: 100%;
+            height: 120px;
+            padding: 15px;
+            border: 2px solid #dee2e6;
+            border-radius: 8px;
+            font-size: 13px;
+            font-family: 'Courier New', monospace;
+            resize: vertical;
+            margin-bottom: 15px;
+        }
+
+        textarea:focus {
+            outline: none;
+            border-color: #3498DB;
+        }
+
+        .btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-family: inherit;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #3498DB 0%, #2980B9 100%);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            box-shadow: 0 4px 12px rgba(52, 152, 219, 0.4);
+        }
+
+        .btn-success {
+            background: linear-gradient(135deg, #27AE60 0%, #229954 100%);
+            color: white;
+        }
+
+        .btn-success:hover {
+            box-shadow: 0 4px 12px rgba(39, 174, 96, 0.4);
+        }
+
+        .btn-secondary {
+            background: #f8f9fa;
+            color: #2C3E50;
+            border: 2px solid #dee2e6;
+        }
+
+        .btn-secondary:hover {
+            border-color: #3498DB;
+            color: #3498DB;
+        }
+
+        .search-box {
+            width: 100%;
+            padding: 12px 15px;
+            border: 2px solid #dee2e6;
+            border-radius: 8px;
+            font-size: 14px;
+            margin-bottom: 20px;
+        }
+
+        .search-box:focus {
+            outline: none;
+            border-color: #3498DB;
+        }
+
+        .camp-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .camp-table th {
+            background: #f8f9fa;
+            padding: 12px 15px;
+            text-align: left;
+            font-weight: 600;
+            font-size: 13px;
+            color: #6c757d;
+            border-bottom: 2px solid #e9ecef;
+            position: sticky;
+            top: 0;
+        }
+
+        .camp-table td {
+            padding: 12px 15px;
+            border-bottom: 1px solid #f0f0f0;
+            font-size: 13px;
+        }
+
+        .camp-table tr:hover {
+            background: #f8f9fa;
+        }
+
+        .camp-table .name {
+            font-weight: 600;
+            color: #2C3E50;
+        }
+
+        .camp-table .coords {
+            font-family: 'Courier New', monospace;
+            color: #7F8C8D;
+            font-size: 12px;
+        }
+
+        .camp-table .actions {
+            display: flex;
+            gap: 5px;
+        }
+
+        .camp-table .btn-small {
+            padding: 5px 10px;
+            font-size: 12px;
+            border-radius: 5px;
+            border: none;
+            cursor: pointer;
+        }
+
+        .camp-table .btn-edit {
+            background: #3498DB;
+            color: white;
+        }
+
+        .camp-table .btn-delete {
+            background: #E74C3C;
+            color: white;
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.5);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal.show {
+            display: flex;
+        }
+
+        .modal-content {
+            background: white;
+            padding: 30px;
+            border-radius: 15px;
+            width: 500px;
+            max-width: 90%;
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+
+        .modal h2 {
+            margin-bottom: 20px;
+            font-size: 20px;
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-size: 13px;
+            color: #6c757d;
+        }
+
+        .form-group input,
+        .form-group select {
+            width: 100%;
+            padding: 10px 12px;
+            border: 2px solid #dee2e6;
+            border-radius: 8px;
+            font-size: 14px;
+        }
+
+        .form-group input:focus,
+        .form-group select:focus {
+            outline: none;
+            border-color: #3498DB;
+        }
+
+        .modal-buttons {
+            display: flex;
+            gap: 10px;
+            margin-top: 20px;
+        }
+
+        .export-section {
+            background: #2C3E50;
+            color: #ECF0F1;
+            padding: 20px;
+            border-radius: 10px;
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+            max-height: 300px;
+            overflow-y: auto;
+            white-space: pre-wrap;
+            word-break: break-all;
+            margin-top: 20px;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: #6c757d;
+        }
+
+        .error {
+            text-align: center;
+            padding: 40px;
+            color: #E74C3C;
+        }
+
+        .success {
+            background: #D5F5E3;
+            color: #27AE60;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        .grid-2 {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+        }
+
+        @media (max-width: 768px) {
+            .grid-2 {
+                grid-template-columns: 1fr;
+            }
+            
+            .camp-table {
+                font-size: 12px;
+            }
+            
+            .camp-table th,
+            .camp-table td {
+                padding: 8px 10px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🏕️ 桂林露营地管理工具</h1>
+            <p>管理营地数据、导入导出、编辑删除</p>
+        </div>
+
+        <div class="stats" id="statsSection">
+            <div class="stat-card">
+                <div class="stat-number" id="statTotal">-</div>
+                <div class="stat-label">总营地数</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number" id="statRegions">-</div>
+                <div class="stat-label">行政区数</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number" id="statLastUpdate">-</div>
+                <div class="stat-label">最后更新</div>
+            </div>
+        </div>
+
+        <div class="section">
+            <div class="section-title">📥 导入新数据</div>
+            
+            <div class="import-area" id="importArea" onclick="document.getElementById('fileInput').click()">
+                <div class="import-icon">📁</div>
+                <div class="import-text">点击上传 JSON 文件</div>
+                <div class="import-hint">或拖拽文件到此处</div>
+            </div>
+            <input type="file" id="fileInput" accept=".json" style="display: none;" onchange="handleFileUpload(event)">
+
+            <div style="text-align: center; margin: 15px 0; color: #7F8C8D;">— 或者 —</div>
+
+            <textarea id="jsonInput" placeholder='粘贴 JSON 数据，例如：
+[
+  {"name": "营地名称", "lon": 110.5231, "lat": 24.7832, "folder": "桂林市/阳朔县"}
+]'></textarea>
+
+            <button class="btn btn-primary" onclick="parseJsonInput()">
+                📋 解析并添加数据
+            </button>
+
+            <div id="importResult"></div>
+        </div>
+
+        <div class="section">
+            <div class="section-title">📋 营地列表</div>
+            
+            <input type="text" class="search-box" id="searchInput" placeholder="🔍 搜索营地名称或行政区..." oninput="filterCamps()">
+
+            <div style="max-height: 500px; overflow-y: auto;">
+                <table class="camp-table">
+                    <thead>
+                        <tr>
+                            <th>名称</th>
+                            <th>行政区</th>
+                            <th>坐标 (X, Y)</th>
+                            <th>操作</th>
+                        </tr>
+                    </thead>
+                    <tbody id="campTableBody">
+                        <tr><td colspan="4" class="loading">加载中...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <div class="section">
+            <div class="section-title">📤 导出数据</div>
+            
+            <button class="btn btn-success" onclick="exportAllData()">
+                📥 导出全部营地数据 (JSON)
+            </button>
+
+            <div id="exportResult"></div>
+        </div>
+
+        <div class="section">
+            <div class="section-title">🔧 数据维护</div>
+            
+            <button class="btn btn-secondary" onclick="downloadTemplate()">
+                📝 下载导入模板
+            </button>
+            
+            <button class="btn btn-secondary" onclick="validateData()">
+                ✅ 数据校验
+            </button>
+            
+            <div id="validationResult"></div>
+        </div>
+    </div>
+
+    <div class="modal" id="editModal">
+        <div class="modal-content">
+            <h2>✏️ 编辑营地</h2>
+            <div id="editForm"></div>
+            <div class="modal-buttons">
+                <button class="btn btn-primary" onclick="saveEdit()">💾 保存</button>
+                <button class="btn btn-secondary" onclick="closeModal()">取消</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let allCamps = [];
+        let regions = {};
+        let filteredCamps = [];
+        let editingCampId = null;
+
+        async function init() {
+            await loadData();
+            loadRegions();
+        }
+
+        async function loadData() {
+            try {
+                const response = await fetch('../data/camps.json');
+                if (!response.ok) throw new Error('数据加载失败');
+                
+                const data = await response.json();
+                allCamps = data.camps;
+                filteredCamps = [...allCamps];
+                
+                updateStats();
+                renderTable();
+            } catch (error) {
+                document.getElementById('campTableBody').innerHTML = `
+                    <tr><td colspan="4" class="error">❌ ${error.message}</td></tr>
+                `;
+            }
+        }
+
+        function loadRegions() {
+            fetch('../data/regions.json')
+                .then(res => res.json())
+                .then(data => {
+                    regions = data.regions || {};
+                    document.getElementById('statRegions').textContent = Object.keys(regions).length;
+                })
+                .catch(err => console.error('加载行政区配置失败:', err));
+        }
+
+        function updateStats() {
+            document.getElementById('statTotal').textContent = allCamps.length;
+            
+            const folders = new Set(allCamps.map(c => c.folder).filter(Boolean));
+            document.getElementById('statRegions').textContent = folders.size;
+            
+            document.getElementById('statLastUpdate').textContent = new Date().toLocaleDateString('zh-CN');
+        }
+
+        function renderTable() {
+            const tbody = document.getElementById('campTableBody');
+            
+            if (filteredCamps.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="4" style="text-align: center; color: #7F8C8D;">没有找到匹配的营地</td></tr>';
+                return;
+            }
+            
+            tbody.innerHTML = filteredCamps.map(camp => `
+                <tr>
+                    <td class="name">${camp.name}</td>
+                    <td>${camp.folder ? camp.folder.replace('桂林市/', '') : '-'}</td>
+                    <td class="coords">${camp.x ? Math.round(camp.x) : '-'}, ${camp.y ? Math.round(camp.y) : '-'}</td>
+                    <td class="actions">
+                        <button class="btn-small btn-edit" onclick="openEditModal(${camp.id})">✏️</button>
+                        <button class="btn-small btn-delete" onclick="deleteCamp(${camp.id})">🗑️</button>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        function filterCamps() {
+            const searchTerm = document.getElementById('searchInput').value.toLowerCase();
+            
+            if (!searchTerm) {
+                filteredCamps = [...allCamps];
+            } else {
+                filteredCamps = allCamps.filter(camp => 
+                    camp.name.toLowerCase().includes(searchTerm) ||
+                    (camp.folder && camp.folder.toLowerCase().includes(searchTerm))
+                );
+            }
+            
+            renderTable();
+        }
+
+        function handleFileUpload(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            
+            if (!file.name.endsWith('.json')) {
+                alert('请上传 JSON 文件！');
+                return;
+            }
+
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                try {
+                    const data = JSON.parse(e.target.result);
+                    processImport(data);
+                } catch (err) {
+                    alert('JSON 解析失败：' + err.message);
+                }
+            };
+            reader.readAsText(file);
+        }
+
+        function parseJsonInput() {
+            const jsonText = document.getElementById('jsonInput').value.trim();
+            if (!jsonText) {
+                alert('请输入 JSON 数据');
+                return;
+            }
+
+            try {
+                const data = JSON.parse(jsonText);
+                processImport(data);
+            } catch (err) {
+                alert('JSON 解析失败：' + err.message);
+            }
+        }
+
+        function processImport(data) {
+            if (!Array.isArray(data)) {
+                data = [data];
+            }
+
+            const validData = data.filter(item => 
+                item.name && (item.lon || item.x)
+            );
+
+            if (validData.length === 0) {
+                document.getElementById('importResult').innerHTML = `
+                    <div class="error" style="margin-top: 15px;">❌ 没有找到有效数据</div>
+                `;
+                return;
+            }
+
+            let added = 0;
+            validData.forEach(item => {
+                const exists = allCamps.some(c => 
+                    c.name === item.name || 
+                    (item.lon && Math.abs(c.lon - item.lon) < 0.0001)
+                );
+                
+                if (!exists) {
+                    const maxId = Math.max(0, ...allCamps.map(c => c.id));
+                    allCamps.push({
+                        id: maxId + 1,
+                        name: item.name,
+                        lon: item.lon || null,
+                        lat: item.lat || null,
+                        x: item.x || null,
+                        y: item.y || null,
+                        address: item.address || '',
+                        type: item.type || '',
+                        price: item.price || '',
+                        folder: item.folder || '',
+                        description: item.description || ''
+                    });
+                    added++;
+                }
+            });
+
+            filteredCamps = [...allCamps];
+            updateStats();
+            renderTable();
+            saveToFile();
+
+            document.getElementById('importResult').innerHTML = `
+                <div class="success">✅ 成功添加 ${added} 个新营地！</div>
+            `;
+            document.getElementById('jsonInput').value = '';
+        }
+
+        function openEditModal(id) {
+            editingCampId = id;
+            const camp = allCamps.find(c => c.id === id);
+            if (!camp) return;
+
+            document.getElementById('editForm').innerHTML = `
+                <div class="form-group">
+                    <label>营地名称</label>
+                    <input type="text" id="editName" value="${camp.name}">
+                </div>
+                <div class="form-group">
+                    <label>所属行政区</label>
+                    <input type="text" id="editFolder" value="${camp.folder || ''}" placeholder="桂林市/阳朔县">
+                </div>
+                <div class="grid-2">
+                    <div class="form-group">
+                        <label>X 坐标</label>
+                        <input type="number" id="editX" value="${camp.x || ''}">
+                    </div>
+                    <div class="form-group">
+                        <label>Y 坐标</label>
+                        <input type="number" id="editY" value="${camp.y || ''}">
+                    </div>
+                </div>
+                <div class="grid-2">
+                    <div class="form-group">
+                        <label>经度</label>
+                        <input type="number" step="0.000001" id="editLon" value="${camp.lon || ''}">
+                    </div>
+                    <div class="form-group">
+                        <label>纬度</label>
+                        <input type="number" step="0.000001" id="editLat" value="${camp.lat || ''}">
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>地址</label>
+                    <input type="text" id="editAddress" value="${camp.address || ''}">
+                </div>
+                <div class="form-group">
+                    <label>类型</label>
+                    <input type="text" id="editType" value="${camp.type || ''}">
+                </div>
+                <div class="form-group">
+                    <label>价格</label>
+                    <input type="text" id="editPrice" value="${camp.price || ''}">
+                </div>
+            `;
+
+            document.getElementById('editModal').classList.add('show');
+        }
+
+        function closeModal() {
+            document.getElementById('editModal').classList.remove('show');
+            editingCampId = null;
+        }
+
+        function saveEdit() {
+            if (editingCampId === null) return;
+            
+            const camp = allCamps.find(c => c.id === editingCampId);
+            if (!camp) return;
+
+            camp.name = document.getElementById('editName').value;
+            camp.folder = document.getElementById('editFolder').value;
+            camp.x = parseFloat(document.getElementById('editX').value) || null;
+            camp.y = parseFloat(document.getElementById('editY').value) || null;
+            camp.lon = parseFloat(document.getElementById('editLon').value) || null;
+            camp.lat = parseFloat(document.getElementById('editLat').value) || null;
+            camp.address = document.getElementById('editAddress').value;
+            camp.type = document.getElementById('editType').value;
+            camp.price = document.getElementById('editPrice').value;
+
+            filteredCamps = [...allCamps];
+            updateStats();
+            renderTable();
+            saveToFile();
+            closeModal();
+            
+            alert('✅ 营地信息已保存！');
+        }
+
+        function deleteCamp(id) {
+            if (!confirm('确定要删除这个营地吗？')) return;
+            
+            allCamps = allCamps.filter(c => c.id !== id);
+            filteredCamps = filteredCamps.filter(c => c.id !== id);
+            
+            updateStats();
+            renderTable();
+            saveToFile();
+        }
+
+        async function saveToFile() {
+            const data = {
+                version: "1.0",
+                lastUpdated: new Date().toISOString().split('T')[0],
+                camps: allCamps
+            };
+
+            const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'camps.json';
+            a.click();
+            URL.revokeObjectURL(url);
+        }
+
+        function exportAllData() {
+            const data = {
+                version: "1.0",
+                lastUpdated: new Date().toISOString().split('T')[0],
+                camps: allCamps
+            };
+
+            document.getElementById('exportResult').innerHTML = `
+                <div class="export-section">${JSON.stringify(data, null, 2)}</div>
+                <button class="btn btn-success" style="margin-top: 15px;" onclick="copyExportData()">
+                    📋 复制到剪贴板
+                </button>
+            `;
+        }
+
+        function copyExportData() {
+            const data = {
+                version: "1.0",
+                lastUpdated: new Date().toISOString().split('T')[0],
+                camps: allCamps
+            };
+            
+            navigator.clipboard.writeText(JSON.stringify(data, null, 2))
+                .then(() => alert('✅ 已复制到剪贴板！'))
+                .catch(() => alert('❌ 复制失败，请手动复制'));
+        }
+
+        function downloadTemplate() {
+            const template = [
+                {
+                    name: "示例营地",
+                    lon: 110.5231,
+                    lat: 24.7832,
+                    folder: "桂林市/阳朔县",
+                    address: "示例地址",
+                    type: "帐篷营地",
+                    price: "价格面议"
+                }
+            ];
+
+            const blob = new Blob([JSON.stringify(template, null, 2)], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = '营地导入模板.json';
+            a.click();
+            URL.revokeObjectURL(url);
+        }
+
+        function validateData() {
+            let issues = [];
+            
+            allCamps.forEach(camp => {
+                if (!camp.name) issues.push(`ID ${camp.id}: 缺少名称`);
+                if (!camp.x || !camp.y) issues.push(`${camp.name}: 缺少坐标`);
+            });
+
+            if (issues.length === 0) {
+                document.getElementById('validationResult').innerHTML = `
+                    <div class="success">✅ 数据校验通过！所有 ${allCamps.length} 个营地数据完整</div>
+                `;
+            } else {
+                document.getElementById('validationResult').innerHTML = `
+                    <div style="background: #FDF2E9; padding: 15px; border-radius: 8px; margin-top: 15px;">
+                        <div style="color: #E67E22; font-weight: 600; margin-bottom: 10px;">⚠️ 发现 ${issues.length} 个问题：</div>
+                        <ul style="color: #6c757d; font-size: 13px;">
+                            ${issues.map(issue => `<li>${issue}</li>`).join('')}
+                        </ul>
+                    </div>
+                `;
+            }
+        }
+
+        // 拖拽上传
+        const importArea = document.getElementById('importArea');
+        importArea.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            importArea.classList.add('dragover');
+        });
+        importArea.addEventListener('dragleave', () => {
+            importArea.classList.remove('dragover');
+        });
+        importArea.addEventListener('drop', (e) => {
+            e.preventDefault();
+            importArea.classList.remove('dragover');
+            if (e.dataTransfer.files.length > 0) {
+                const file = e.dataTransfer.files[0];
+                if (file.name.endsWith('.json')) {
+                    const reader = new FileReader();
+                    reader.onload = (event) => {
+                        try {
+                            const data = JSON.parse(event.target.result);
+                            processImport(data);
+                        } catch (err) {
+                            alert('JSON 解析失败：' + err.message);
+                        }
+                    };
+                    reader.readAsText(file);
+                } else {
+                    alert('请上传 JSON 文件！');
+                }
+            }
+        });
+
+        init();
+    </script>
+</body>
+</html>

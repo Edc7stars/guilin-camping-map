@@ -1,0 +1,1167 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>桂林市露营地导览地图</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #2C3E50;
+            --accent: #E67E22;
+            --accent-light: #F39C12;
+            --bg-light: #ECF0F1;
+            --bg-white: #FFFFFF;
+            --text-dark: #2C3E50;
+            --text-light: #7F8C8D;
+            --border: #BDC3C7;
+            --shadow: rgba(44, 62, 80, 0.15);
+            --pin-shadow: rgba(230, 126, 34, 0.4);
+            --sidebar-width: 380px;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Noto Sans SC', -apple-system, BlinkMacSystemFont, sans-serif;
+            overflow: hidden;
+            background: var(--bg-light);
+            color: var(--text-dark);
+            height: 100vh;
+        }
+
+        .app-container {
+            display: flex;
+            height: 100vh;
+            width: 100vw;
+        }
+
+        .map-section {
+            flex: 1;
+            position: relative;
+            overflow: hidden;
+            background: #F5F0E6;
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .map-viewport {
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            touch-action: none;
+            position: relative;
+            cursor: grab;
+        }
+
+        .map-viewport:active {
+            cursor: grabbing;
+        }
+
+        .map-transform {
+            position: absolute;
+            transform-origin: 0 0;
+            will-change: transform;
+            transition: transform 0.05s linear;
+        }
+
+        .map-transform.animating {
+            transition: none;
+        }
+
+        #markersLayer {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 100;
+        }
+
+        #markersLayer .pin-marker {
+            position: absolute;
+            transform: translate(-50%, -100%);
+            cursor: pointer;
+            pointer-events: auto;
+            z-index: 100;
+            transition: z-index 0s;
+        }
+
+        #markersLayer .pin-marker:hover {
+            z-index: 200;
+        }
+
+        #markersLayer .pin-marker.active {
+            z-index: 300;
+        }
+
+        .map-image {
+            display: block;
+            user-select: none;
+            -webkit-user-drag: none;
+            pointer-events: none;
+        }
+
+        .pin-number {
+            width: 36px;
+            height: 36px;
+            background: linear-gradient(135deg, var(--accent) 0%, var(--accent-light) 100%);
+            border-radius: 50% 50% 50% 0;
+            transform: rotate(-45deg);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 4px 12px var(--pin-shadow);
+            border: 3px solid var(--bg-white);
+            transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+
+        .pin-marker:hover .pin-number {
+            transform: rotate(-45deg) scale(1.15);
+        }
+
+        .pin-marker.active .pin-number {
+            transform: rotate(-45deg) scale(1.25);
+            box-shadow: 0 6px 20px var(--pin-shadow);
+        }
+
+        .pin-number span {
+            transform: rotate(45deg);
+            color: white;
+            font-size: 14px;
+            font-weight: 700;
+        }
+
+        .region-marker {
+            position: absolute;
+            cursor: pointer;
+            pointer-events: auto;
+            z-index: 90;
+            transition: all 0.3s ease;
+            transform: translate(-50%, -100%);
+            white-space: nowrap;
+        }
+
+        .region-marker .marker-dot {
+            width: 12px;
+            height: 12px;
+            background: #E74C3C;
+            border: 2px solid white;
+            border-radius: 50%;
+            margin: 0 auto 4px;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+        }
+
+        .region-marker .marker-label {
+            font-size: 12px;
+            font-weight: 600;
+            color: #2C3E50;
+            text-shadow: 0 1px 3px rgba(255,255,255,0.8);
+            text-align: center;
+        }
+
+        .region-marker:hover .marker-dot {
+            transform: scale(1.2);
+        }
+
+        .region-marker:hover .marker-label {
+            color: #E74C3C;
+        }
+
+        .cluster-marker {
+            position: absolute;
+            transform: translate(-50%, -50%);
+            cursor: pointer;
+            pointer-events: auto;
+            z-index: 150;
+            transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+
+        .cluster-marker:hover {
+            transform: translate(-50%, -50%) scale(1.1);
+            z-index: 250;
+        }
+
+        .cluster-circle {
+            background: linear-gradient(135deg, #3498DB 0%, #2980B9 100%);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 4px 16px rgba(52, 152, 219, 0.4);
+            border: 3px solid white;
+        }
+
+        .cluster-circle span {
+            color: white;
+            font-weight: 700;
+            font-size: 14px;
+        }
+
+        .sidebar {
+            width: var(--sidebar-width);
+            background: var(--bg-white);
+            box-shadow: -4px 0 20px var(--shadow);
+            display: flex;
+            flex-direction: column;
+            z-index: 200;
+            transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .sidebar-header {
+            padding: 24px;
+            background: linear-gradient(135deg, var(--primary) 0%, #34495E 100%);
+            color: white;
+        }
+
+        .sidebar-header h1 {
+            font-size: 20px;
+            font-weight: 700;
+            margin-bottom: 8px;
+        }
+
+        .sidebar-header p {
+            font-size: 13px;
+            opacity: 0.9;
+        }
+
+        .region-filters {
+            padding: 12px 16px;
+            display: flex;
+            gap: 8px;
+            overflow-x: auto;
+            background: var(--bg-light);
+            border-bottom: 1px solid var(--border);
+            -webkit-overflow-scrolling: touch;
+        }
+
+        .region-filters::-webkit-scrollbar {
+            display: none;
+        }
+
+        .region-btn {
+            padding: 8px 16px;
+            border: 2px solid var(--border);
+            border-radius: 20px;
+            background: white;
+            color: var(--text-dark);
+            font-size: 13px;
+            font-weight: 500;
+            cursor: pointer;
+            white-space: nowrap;
+            transition: all 0.3s;
+        }
+
+        .region-btn:hover {
+            border-color: var(--accent);
+            color: var(--accent);
+        }
+
+        .region-btn.active {
+            background: var(--accent);
+            border-color: var(--accent);
+            color: white;
+        }
+
+        .list-container {
+            flex: 1;
+            overflow-y: auto;
+            padding: 16px;
+            -webkit-overflow-scrolling: touch;
+        }
+
+        .list-container::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .list-container::-webkit-scrollbar-thumb {
+            background: var(--border);
+            border-radius: 3px;
+        }
+
+        .camping-card {
+            background: white;
+            border-radius: 12px;
+            padding: 16px;
+            margin-bottom: 12px;
+            box-shadow: 0 2px 8px var(--shadow);
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .camping-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 16px var(--shadow);
+        }
+
+        .camping-card.active {
+            border-left: 4px solid var(--accent);
+        }
+
+        .camping-card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 8px;
+        }
+
+        .camping-card h3 {
+            font-size: 15px;
+            font-weight: 600;
+            color: var(--text-dark);
+            flex: 1;
+        }
+
+        .camping-card .badge {
+            font-size: 11px;
+            padding: 4px 8px;
+            border-radius: 12px;
+            font-weight: 500;
+        }
+
+        .camping-card .badge.type {
+            background: #EBF5FB;
+            color: #3498DB;
+        }
+
+        .camping-card .badge.price {
+            background: #E8F8F5;
+            color: #27AE60;
+        }
+
+        .camping-card .address {
+            font-size: 12px;
+            color: var(--text-light);
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .camping-card .description {
+            font-size: 12px;
+            color: var(--text-light);
+            line-height: 1.6;
+        }
+
+        .zoom-controls {
+            position: absolute;
+            right: 16px;
+            bottom: 16px;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            z-index: 300;
+        }
+
+        .zoom-btn {
+            width: 44px;
+            height: 44px;
+            border-radius: 50%;
+            background: white;
+            border: none;
+            box-shadow: 0 2px 12px var(--shadow);
+            font-size: 20px;
+            font-weight: 600;
+            color: var(--primary);
+            cursor: pointer;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .zoom-btn:hover {
+            background: var(--primary);
+            color: white;
+        }
+
+        .zoom-level {
+            position: absolute;
+            left: 16px;
+            bottom: 16px;
+            background: rgba(44, 62, 80, 0.8);
+            color: white;
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 500;
+            z-index: 300;
+        }
+
+        .detail-panel {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: white;
+            border-radius: 20px 20px 0 0;
+            box-shadow: 0 -4px 20px var(--shadow);
+            max-height: 70vh;
+            overflow-y: auto;
+            transform: translateY(100%);
+            transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            z-index: 500;
+        }
+
+        .detail-panel.show {
+            transform: translateY(0);
+        }
+
+        .detail-header {
+            padding: 24px;
+            background: linear-gradient(135deg, var(--primary) 0%, #34495E 100%);
+            color: white;
+            border-radius: 20px 20px 0 0;
+        }
+
+        .detail-header h2 {
+            font-size: 18px;
+            font-weight: 700;
+            margin-bottom: 8px;
+        }
+
+        .detail-header .type-badge {
+            display: inline-block;
+            background: rgba(255,255,255,0.2);
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-size: 12px;
+            margin-bottom: 8px;
+        }
+
+        .detail-content {
+            padding: 24px;
+        }
+
+        .detail-row {
+            display: flex;
+            align-items: flex-start;
+            gap: 12px;
+            margin-bottom: 16px;
+        }
+
+        .detail-icon {
+            width: 40px;
+            height: 40px;
+            border-radius: 10px;
+            background: var(--bg-light);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+        }
+
+        .detail-info {
+            flex: 1;
+        }
+
+        .detail-label {
+            font-size: 12px;
+            color: var(--text-light);
+            margin-bottom: 4px;
+        }
+
+        .detail-value {
+            font-size: 14px;
+            color: var(--text-dark);
+            font-weight: 500;
+        }
+
+        .detail-description {
+            background: var(--bg-light);
+            padding: 16px;
+            border-radius: 10px;
+            margin-top: 16px;
+            line-height: 1.8;
+            font-size: 13px;
+            color: var(--text-dark);
+        }
+
+        .close-btn {
+            position: absolute;
+            top: 16px;
+            right: 16px;
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            background: rgba(255,255,255,0.2);
+            border: none;
+            color: white;
+            font-size: 18px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .close-btn:hover {
+            background: rgba(255,255,255,0.3);
+        }
+
+        .loading {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            font-size: 16px;
+            color: var(--text-light);
+        }
+
+        .error {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            font-size: 14px;
+            color: #E74C3C;
+            padding: 20px;
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+    <div id="app">
+        <div class="loading">正在加载地图数据...</div>
+    </div>
+
+    <script>
+        let CAMPING_DATA = [];
+        let REGION_CONFIG = {};
+        let currentSite = null;
+        let filteredData = [];
+        let selectedRegion = null;
+
+        let scale = 1;
+        let minScale = 0.1;
+        let maxScale = 4;
+        let panX = 0;
+        let panY = 0;
+
+        let isDragging = false;
+        let startX, startY;
+        let lastX, lastY;
+        let lastTime;
+        let velocityX = 0;
+        let velocityY = 0;
+
+        let isAnimating = false;
+        let rafId = null;
+        let mapWidth = 1696;
+        let mapHeight = 2528;
+
+        async function loadData() {
+            try {
+                const [campsRes, regionsRes] = await Promise.all([
+                    fetch('data/camps.json'),
+                    fetch('data/regions.json')
+                ]);
+
+                if (!campsRes.ok || !regionsRes.ok) {
+                    throw new Error('数据加载失败');
+                }
+
+                const campsData = await campsRes.json();
+                const regionsData = await regionsRes.json();
+
+                CAMPING_DATA = campsData.camps;
+                REGION_CONFIG = regionsData.regions;
+                filteredData = [...CAMPING_DATA];
+
+                renderApp();
+            } catch (error) {
+                document.getElementById('app').innerHTML = `
+                    <div class="error">
+                        <div>
+                            <p>❌ 数据加载失败</p>
+                            <p style="margin-top: 8px; font-size: 12px;">${error.message}</p>
+                        </div>
+                    </div>
+                `;
+            }
+        }
+
+        function renderApp() {
+            const regions = extractRegions();
+            const regionNames = ['全部', ...Array.from(regions.keys()).sort()];
+
+            document.getElementById('app').innerHTML = `
+                <div class="app-container">
+                    <div class="map-section">
+                        <div class="map-viewport" id="mapViewport">
+                            <div class="map-transform" id="mapTransform">
+                                <img src="assets/images/map-main.png" alt="地图" class="map-image" id="mapImage">
+                            </div>
+                            <div id="markersLayer"></div>
+                        </div>
+                        <div class="zoom-controls">
+                            <button class="zoom-btn" onclick="handleZoomIn()">+</button>
+                            <button class="zoom-btn" onclick="handleZoomOut()">−</button>
+                            <button class="zoom-btn" onclick="handleResetView()" style="font-size: 12px;">重置</button>
+                        </div>
+                        <div class="zoom-level" id="zoomLevel">缩放: 100%</div>
+                    </div>
+
+                    <div class="sidebar">
+                        <div class="sidebar-header">
+                            <h1>🏕️ 桂林露营地导览</h1>
+                            <p>共 ${CAMPING_DATA.length} 个营地</p>
+                        </div>
+                        <div class="region-filters" id="regionFilters">
+                            ${regionNames.map(name => `
+                                <button class="region-btn ${name === '全部' ? 'active' : ''}" 
+                                        onclick="filterByRegion('${name}')">
+                                    ${name}
+                                </button>
+                            `).join('')}
+                        </div>
+                        <div class="list-container" id="listContainer">
+                            ${renderList()}
+                        </div>
+                    </div>
+                </div>
+
+                <div class="detail-panel" id="detailPanel">
+                    <div class="detail-header">
+                        <button class="close-btn" onclick="closeDetail()">×</button>
+                        <div class="type-badge" id="detailType"></div>
+                        <h2 id="detailName"></h2>
+                    </div>
+                    <div class="detail-content" id="detailContent"></div>
+                </div>
+            `;
+
+            initMap();
+            setupEventListeners();
+            setupTouchScrolling();
+        }
+
+        function initMap() {
+            const mapImage = document.getElementById('mapImage');
+            const viewport = document.getElementById('mapViewport');
+
+            mapImage.onload = () => {
+                mapWidth = mapImage.naturalWidth;
+                mapHeight = mapImage.naturalHeight;
+                fitToView();
+                renderMarkers(filteredData);
+                renderRegionMarkers();
+            };
+
+            if (mapImage.complete) {
+                mapWidth = mapImage.naturalWidth;
+                mapHeight = mapImage.naturalHeight;
+                fitToView();
+                renderMarkers(filteredData);
+                renderRegionMarkers();
+            }
+
+            viewport.addEventListener('wheel', handleWheel, { passive: false });
+            viewport.addEventListener('mousedown', handleMouseDown);
+            viewport.addEventListener('touchstart', handleTouchStart, { passive: false });
+            document.addEventListener('mousemove', handleMouseMove);
+            document.addEventListener('mouseup', handleMouseUp);
+            document.addEventListener('touchmove', handleTouchMove, { passive: false });
+            document.addEventListener('touchend', handleTouchEnd);
+        }
+
+        function fitToView() {
+            const viewport = document.getElementById('mapViewport');
+            const rect = viewport.getBoundingClientRect();
+            scale = Math.min(rect.width / mapWidth, rect.height / mapHeight) * 0.95;
+            panX = (rect.width - mapWidth * scale) / 2;
+            panY = (rect.height - mapHeight * scale) / 2;
+            updateTransform();
+        }
+
+        function handleWheel(e) {
+            e.preventDefault();
+            const viewport = document.getElementById('mapViewport');
+            const rect = viewport.getBoundingClientRect();
+            const mouseX = e.clientX - rect.left;
+            const mouseY = e.clientY - rect.top;
+
+            const zoomFactor = e.deltaY > 0 ? 0.85 : 1.15;
+            const newScale = Math.min(maxScale, Math.max(minScale, scale * zoomFactor));
+
+            if (newScale !== scale) {
+                const oldScale = scale;
+                scale = newScale;
+                panX = mouseX - (mouseX - panX) * (scale / oldScale);
+                panY = mouseY - (mouseY - panY) * (scale / oldScale);
+                updateTransform();
+                updateZoomLevel();
+            }
+        }
+
+        function handleMouseDown(e) {
+            if (e.target.closest('.pin-marker') || e.target.closest('.cluster-marker')) return;
+            isDragging = true;
+            startX = e.clientX - panX;
+            startY = e.clientY - panY;
+            lastX = e.clientX;
+            lastY = e.clientY;
+            lastTime = Date.now();
+            velocityX = 0;
+            velocityY = 0;
+            document.getElementById('mapViewport').style.cursor = 'grabbing';
+            cancelAnimation();
+        }
+
+        function handleMouseMove(e) {
+            if (!isDragging) return;
+            const currentTime = Date.now();
+            const dt = currentTime - lastTime;
+            if (dt > 0) {
+                velocityX = (e.clientX - lastX) / dt * 16;
+                velocityY = (e.clientY - lastY) / dt * 16;
+            }
+            lastX = e.clientX;
+            lastY = e.clientY;
+            lastTime = currentTime;
+            panX = e.clientX - startX;
+            panY = e.clientY - startY;
+            updateTransform();
+        }
+
+        function handleMouseUp() {
+            if (!isDragging) return;
+            isDragging = false;
+            document.getElementById('mapViewport').style.cursor = 'grab';
+            if (Math.abs(velocityX) > 5 || Math.abs(velocityY) > 5) {
+                startInertia();
+            }
+        }
+
+        function handleTouchStart(e) {
+            if (e.target.closest('.pin-marker') || e.target.closest('.cluster-marker')) return;
+            if (e.touches.length === 1) {
+                const touch = e.touches[0];
+                isDragging = true;
+                startX = touch.clientX - panX;
+                startY = touch.clientY - panY;
+                lastX = touch.clientX;
+                lastY = touch.clientY;
+                lastTime = Date.now();
+                velocityX = 0;
+                velocityY = 0;
+                cancelAnimation();
+            }
+        }
+
+        function handleTouchMove(e) {
+            if (!isDragging || e.touches.length !== 1) return;
+            e.preventDefault();
+            const touch = e.touches[0];
+            const currentTime = Date.now();
+            const dt = currentTime - lastTime;
+            if (dt > 0) {
+                velocityX = (touch.clientX - lastX) / dt * 16;
+                velocityY = (touch.clientY - lastY) / dt * 16;
+            }
+            lastX = touch.clientX;
+            lastY = touch.clientY;
+            lastTime = currentTime;
+            panX = touch.clientX - startX;
+            panY = touch.clientY - startY;
+            updateTransform();
+        }
+
+        function handleTouchEnd() {
+            isDragging = false;
+            if (Math.abs(velocityX) > 5 || Math.abs(velocityY) > 5) {
+                startInertia();
+            }
+        }
+
+        function cancelAnimation() {
+            if (rafId) {
+                cancelAnimationFrame(rafId);
+                rafId = null;
+            }
+            isAnimating = false;
+        }
+
+        function startInertia() {
+            isAnimating = true;
+            const friction = 0.95;
+            const minVelocity = 0.1;
+
+            function animate() {
+                if (!isAnimating) return;
+
+                velocityX *= friction;
+                velocityY *= friction;
+
+                if (Math.abs(velocityX) < minVelocity && Math.abs(velocityY) < minVelocity) {
+                    cancelAnimation();
+                    return;
+                }
+
+                panX += velocityX;
+                panY += velocityY;
+                updateTransform();
+
+                rafId = requestAnimationFrame(animate);
+            }
+
+            rafId = requestAnimationFrame(animate);
+        }
+
+        function updateTransform() {
+            const transform = document.getElementById('mapTransform');
+            transform.classList.add('animating');
+            transform.style.transform = `translate(${panX}px, ${panY}px) scale(${scale})`;
+            renderMarkers(filteredData);
+            renderRegionMarkers();
+        }
+
+        function updateZoomLevel() {
+            document.getElementById('zoomLevel').textContent = `缩放: ${Math.round(scale * 100)}%`;
+        }
+
+        function handleZoomIn() {
+            const viewport = document.getElementById('mapViewport');
+            const rect = viewport.getBoundingClientRect();
+            const centerX = rect.width / 2;
+            const centerY = rect.height / 2;
+            const oldScale = scale;
+            scale = Math.min(maxScale, scale * 1.3);
+            panX = centerX - (centerX - panX) * (scale / oldScale);
+            panY = centerY - (centerY - panY) * (scale / oldScale);
+            updateTransform();
+            updateZoomLevel();
+        }
+
+        function handleZoomOut() {
+            const viewport = document.getElementById('mapViewport');
+            const rect = viewport.getBoundingClientRect();
+            const centerX = rect.width / 2;
+            const centerY = rect.height / 2;
+            const oldScale = scale;
+            scale = Math.max(minScale, scale / 1.3);
+            panX = centerX - (centerX - panX) * (scale / oldScale);
+            panY = centerY - (centerY - panY) * (scale / oldScale);
+            updateTransform();
+            updateZoomLevel();
+        }
+
+        function handleResetView() {
+            fitToView();
+            updateZoomLevel();
+        }
+
+        function setupEventListeners() {
+            const regionFilters = document.getElementById('regionFilters');
+            if (regionFilters) {
+                let isScrolling = false;
+                let startX = 0;
+                let scrollLeft = 0;
+
+                regionFilters.addEventListener('touchstart', (e) => {
+                    isScrolling = true;
+                    startX = e.touches[0].pageX - regionFilters.offsetLeft;
+                    scrollLeft = regionFilters.scrollLeft;
+                }, { passive: true });
+
+                regionFilters.addEventListener('touchmove', (e) => {
+                    if (!isScrolling) return;
+                    e.preventDefault();
+                    const x = e.touches[0].pageX - regionFilters.offsetLeft;
+                    const walk = (x - startX) * 1.5;
+                    regionFilters.scrollLeft = scrollLeft - walk;
+                }, { passive: false });
+
+                regionFilters.addEventListener('touchend', () => {
+                    isScrolling = false;
+                }, { passive: true });
+            }
+
+            const listContainer = document.getElementById('listContainer');
+            if (listContainer) {
+                let isScrolling = false;
+                let startY = 0;
+                let scrollTop = 0;
+
+                listContainer.addEventListener('touchstart', (e) => {
+                    if (e.target.closest('.region-filters')) return;
+                    isScrolling = true;
+                    startY = e.touches[0].pageY - listContainer.offsetTop;
+                    scrollTop = listContainer.scrollTop;
+                }, { passive: true });
+
+                listContainer.addEventListener('touchmove', (e) => {
+                    if (!isScrolling) return;
+                    e.preventDefault();
+                    const y = e.touches[0].pageY - listContainer.offsetTop;
+                    const walk = (y - startY) * 1.5;
+                    listContainer.scrollTop = scrollTop - walk;
+                }, { passive: false });
+
+                listContainer.addEventListener('touchend', () => {
+                    isScrolling = false;
+                }, { passive: true });
+            }
+        }
+
+        function setupTouchScrolling() {
+        }
+
+        function extractRegions() {
+            const regions = new Map();
+            CAMPING_DATA.forEach(site => {
+                if (site.folder) {
+                    const region = site.folder.replace('桂林市/', '');
+                    if (!regions.has(region)) {
+                        regions.set(region, []);
+                    }
+                    regions.get(region).push(site);
+                }
+            });
+            return regions;
+        }
+
+        function filterByRegion(region) {
+            selectedRegion = region === '全部' ? null : region;
+
+            document.querySelectorAll('.region-btn').forEach(btn => {
+                btn.classList.remove('active');
+                if (btn.textContent === (region === '全部' ? '全部' : region)) {
+                    btn.classList.add('active');
+                }
+            });
+
+            if (selectedRegion) {
+                filteredData = CAMPING_DATA.filter(site => 
+                    site.folder && site.folder.includes(selectedRegion)
+                );
+                const regions = extractRegions();
+                const config = REGION_CONFIG[selectedRegion];
+                if (config) {
+                    const viewport = document.getElementById('mapViewport');
+                    const rect = viewport.getBoundingClientRect();
+                    const baseScale = Math.min(rect.width / mapWidth, rect.height / mapHeight);
+                    const effectiveScale = config.scale * baseScale;
+                    scale = effectiveScale;
+                    panX = rect.width / 2 - config.x * effectiveScale;
+                    panY = rect.height / 2 - config.y * effectiveScale;
+                    updateTransform();
+                    updateZoomLevel();
+                }
+            } else {
+                filteredData = [...CAMPING_DATA];
+                fitToView();
+            }
+
+            renderList();
+            renderMarkers(filteredData);
+            renderRegionMarkers();
+        }
+
+        function renderList() {
+            return filteredData.map(site => `
+                <div class="camping-card ${currentSite && currentSite.id === site.id ? 'active' : ''}" 
+                     onclick="showDetail(${site.id})">
+                    <div class="camping-card-header">
+                        <h3>${site.name}</h3>
+                        <div style="display: flex; gap: 4px;">
+                            ${site.type ? `<span class="badge type">${site.type}</span>` : ''}
+                            ${site.price ? `<span class="badge price">${site.price}</span>` : ''}
+                        </div>
+                    </div>
+                    ${site.address ? `<div class="address">📍 ${site.address}</div>` : ''}
+                    ${site.description ? `<div class="description">${site.description.split('|')[0]}</div>` : ''}
+                </div>
+            `).join('');
+        }
+
+        function renderMarkers(sites) {
+            const markersLayer = document.getElementById('markersLayer');
+            markersLayer.querySelectorAll('.pin-marker, .cluster-marker').forEach(el => el.remove());
+
+            const clusters = new Map();
+            const clusterDistance = 80;
+
+            sites.forEach(site => {
+                if (site.x === null || site.y === null) return;
+                const x = panX + site.x * scale;
+                const y = panY + site.y * scale;
+
+                let clustered = false;
+                for (const [key, cluster] of clusters) {
+                    const [cx, cy] = key.split(',').map(Number);
+                    const dist = Math.sqrt((x - cx) ** 2 + (y - cy) ** 2);
+                    if (dist < clusterDistance) {
+                        cluster.sites.push(site);
+                        cluster.x = (cluster.x * (cluster.sites.length - 1) + x) / cluster.sites.length;
+                        cluster.y = (cluster.y * (cluster.sites.length - 1) + y) / cluster.sites.length;
+                        clustered = true;
+                        break;
+                    }
+                }
+
+                if (!clustered) {
+                    clusters.set(`${x},${y}`, { sites: [site], x, y });
+                }
+            });
+
+            const viewport = document.getElementById('mapViewport');
+            const rect = viewport.getBoundingClientRect();
+
+            clusters.forEach((cluster, key) => {
+                if (cluster.sites.length === 1) {
+                    const site = cluster.sites[0];
+                    const marker = document.createElement('div');
+                    marker.className = 'pin-marker' + (currentSite && currentSite.id === site.id ? ' active' : '');
+                    marker.style.left = cluster.x + 'px';
+                    marker.style.top = cluster.y + 'px';
+                    marker.innerHTML = `
+                        <div class="pin-number">
+                            <span>${site.id}</span>
+                        </div>
+                    `;
+                    marker.onclick = () => showDetail(site.id);
+                    markersLayer.appendChild(marker);
+                } else {
+                    const size = 40 + Math.min(cluster.sites.length * 2, 20);
+                    const marker = document.createElement('div');
+                    marker.className = 'cluster-marker';
+                    marker.style.left = cluster.x + 'px';
+                    marker.style.top = cluster.y + 'px';
+                    marker.innerHTML = `
+                        <div class="cluster-circle" style="width: ${size}px; height: ${size}px;">
+                            <span>${cluster.sites.length}</span>
+                        </div>
+                    `;
+                    marker.onclick = () => handleClusterClick(cluster.sites.map(s => s.id).join(','));
+                    markersLayer.appendChild(marker);
+                }
+            });
+        }
+
+        function handleClusterClick(ids) {
+            const idArray = ids.split(',').map(id => parseInt(id));
+            if (idArray.length === 1) {
+                showDetail(idArray[0]);
+                return;
+            }
+            const site = CAMPING_DATA.find(s => s.id === idArray[0]);
+            if (!site) return;
+            const factor = 2.5;
+            const newScale = Math.min(maxScale, scale * factor);
+            const viewport = document.getElementById('mapViewport');
+            const rect = viewport.getBoundingClientRect();
+            const centerX = rect.width / 2;
+            const centerY = rect.height / 2;
+            scale = newScale;
+            panX = centerX - site.x * scale;
+            panY = centerY - site.y * scale;
+            updateTransform();
+            updateZoomLevel();
+        }
+
+        function renderRegionMarkers() {
+            const markersLayer = document.getElementById('markersLayer');
+            markersLayer.querySelectorAll('.region-marker').forEach(el => el.remove());
+
+            if (selectedRegion && REGION_CONFIG[selectedRegion]) {
+                const config = REGION_CONFIG[selectedRegion];
+                const markerX = panX + config.x * scale;
+                const markerY = panY + config.y * scale;
+                const marker = document.createElement('div');
+                marker.className = 'region-marker';
+                marker.style.left = markerX + 'px';
+                marker.style.top = markerY + 'px';
+                marker.innerHTML = `
+                    <div class="marker-dot"></div>
+                    <div class="marker-label">${selectedRegion}</div>
+                `;
+                marker.onclick = () => filterByRegion(selectedRegion);
+                markersLayer.appendChild(marker);
+            } else {
+                Object.keys(REGION_CONFIG).forEach(regionName => {
+                    const config = REGION_CONFIG[regionName];
+                    const markerX = panX + config.x * scale;
+                    const markerY = panY + config.y * scale;
+                    const marker = document.createElement('div');
+                    marker.className = 'region-marker';
+                    marker.style.left = markerX + 'px';
+                    marker.style.top = markerY + 'px';
+                    marker.innerHTML = `
+                        <div class="marker-dot"></div>
+                        <div class="marker-label">${regionName}</div>
+                    `;
+                    marker.onclick = () => filterByRegion(regionName);
+                    markersLayer.appendChild(marker);
+                });
+            }
+        }
+
+        function showDetail(id) {
+            const site = CAMPING_DATA.find(s => s.id === id);
+            if (!site) return;
+            currentSite = site;
+
+            document.getElementById('detailType').textContent = site.type || '营地';
+            document.getElementById('detailName').textContent = site.name;
+
+            const details = [];
+            if (site.address) {
+                details.push(`
+                    <div class="detail-row">
+                        <div class="detail-icon">📍</div>
+                        <div class="detail-info">
+                            <div class="detail-label">地址</div>
+                            <div class="detail-value">${site.address}</div>
+                        </div>
+                    </div>
+                `);
+            }
+            if (site.price) {
+                details.push(`
+                    <div class="detail-row">
+                        <div class="detail-icon">💰</div>
+                        <div class="detail-info">
+                            <div class="detail-label">价格</div>
+                            <div class="detail-value">${site.price}</div>
+                        </div>
+                    </div>
+                `);
+            }
+            if (site.folder) {
+                details.push(`
+                    <div class="detail-row">
+                        <div class="detail-icon">🏷️</div>
+                        <div class="detail-info">
+                            <div class="detail-label">所属区域</div>
+                            <div class="detail-value">${site.folder.replace('桂林市/', '')}</div>
+                        </div>
+                    </div>
+                `);
+            }
+            if (site.description) {
+                details.push(`
+                    <div class="detail-description">${site.description.replace(/\|/g, '<br>')}</div>
+                `);
+            }
+
+            document.getElementById('detailContent').innerHTML = details.join('');
+            document.getElementById('detailPanel').classList.add('show');
+
+            renderMarkers(filteredData);
+        }
+
+        function closeDetail() {
+            document.getElementById('detailPanel').classList.remove('show');
+            currentSite = null;
+            renderMarkers(filteredData);
+        }
+
+        loadData();
+    </script>
+</body>
+</html>
