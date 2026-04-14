@@ -439,11 +439,14 @@
                             <th>名称</th>
                             <th>行政区</th>
                             <th>坐标 (X, Y)</th>
+                            <th>BD-09 坐标</th>
+                            <th>GCJ-02 坐标</th>
+                            <th>百度 UID</th>
                             <th>操作</th>
                         </tr>
                     </thead>
                     <tbody id="campTableBody">
-                        <tr><td colspan="4" class="loading">加载中...</td></tr>
+                        <tr><td colspan="7" class="loading">加载中...</td></tr>
                     </tbody>
                 </table>
             </div>
@@ -491,6 +494,17 @@
         let filteredCamps = [];
         let editingCampId = null;
 
+        function bd09ToGcj02(bdLon, bdLat) {
+            const x = bdLon - 0.0065;
+            const y = bdLat - 0.006;
+            const z = Math.sqrt(x * x + y * y) + 0.00002 * Math.sin(y * Math.PI * 3000 / 180);
+            const theta = Math.atan2(y, x) + 0.000003 * Math.cos(x * Math.PI * 3000 / 180);
+            return {
+                lon: parseFloat(z * Math.cos(theta).toFixed(6)),
+                lat: parseFloat(z * Math.sin(theta).toFixed(6))
+            };
+        }
+
         async function init() {
             await loadData();
             loadRegions();
@@ -537,7 +551,7 @@
             const tbody = document.getElementById('campTableBody');
             
             if (filteredCamps.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="4" style="text-align: center; color: #7F8C8D;">没有找到匹配的营地</td></tr>';
+                tbody.innerHTML = '<tr><td colspan="7" style="text-align: center; color: #7F8C8D;">没有找到匹配的营地</td></tr>';
                 return;
             }
             
@@ -546,6 +560,9 @@
                     <td class="name">${camp.name}</td>
                     <td>${camp.folder ? camp.folder.replace('桂林市/', '') : '-'}</td>
                     <td class="coords">${camp.x ? Math.round(camp.x) : '-'}, ${camp.y ? Math.round(camp.y) : '-'}</td>
+                    <td class="coords">${camp.lon ? camp.lon.toFixed(6) : '-'}, ${camp.lat ? camp.lat.toFixed(6) : '-'}</td>
+                    <td class="coords">${camp.gcj02_lon ? camp.gcj02_lon.toFixed(6) : '-'}, ${camp.gcj02_lat ? camp.gcj02_lat.toFixed(6) : '-'}</td>
+                    <td class="uid">${camp.baidu_uid || '<span style="color: #E74C3C;">缺失</span>'}</td>
                     <td class="actions">
                         <button class="btn-small btn-edit" onclick="openEditModal(${camp.id})">✏️</button>
                         <button class="btn-small btn-delete" onclick="deleteCamp(${camp.id})">🗑️</button>
@@ -622,6 +639,8 @@
             }
 
             let added = 0;
+            let missingUidCount = 0;
+
             validData.forEach(item => {
                 const exists = allCamps.some(c => 
                     c.name === item.name || 
@@ -630,11 +649,32 @@
                 
                 if (!exists) {
                     const maxId = Math.max(0, ...allCamps.map(c => c.id));
+                    let gcj02_lon = item.gcj02_lon || null;
+                    let gcj02_lat = item.gcj02_lat || null;
+                    
+                    if (item.lon && item.lat && !gcj02_lon) {
+                        const gcj02 = bd09ToGcj02(item.lon, item.lat);
+                        gcj02_lon = gcj02.lon;
+                        gcj02_lat = gcj02.lat;
+                    }
+
+                    let baidu_uid = item.baidu_uid || null;
+                    if (!baidu_uid && item.metadata && item.metadata.uid) {
+                        baidu_uid = item.metadata.uid;
+                    }
+
+                    if (!baidu_uid) {
+                        missingUidCount++;
+                    }
+                    
                     allCamps.push({
                         id: maxId + 1,
                         name: item.name,
                         lon: item.lon || null,
                         lat: item.lat || null,
+                        gcj02_lon: gcj02_lon,
+                        gcj02_lat: gcj02_lat,
+                        baidu_uid: baidu_uid,
                         x: item.x || null,
                         y: item.y || null,
                         address: item.address || '',
@@ -652,9 +692,12 @@
             renderTable();
             saveToFile();
 
-            document.getElementById('importResult').innerHTML = `
-                <div class="success">✅ 成功添加 ${added} 个新营地！</div>
-            `;
+            let resultMessage = `<div class="success">✅ 成功添加 ${added} 个新营地！</div>`;
+            if (missingUidCount > 0) {
+                resultMessage += `<div class="warning" style="margin-top: 10px;">⚠️ 警告：${missingUidCount} 个营地缺少百度地图 UID，导航功能可能不完整。</div>`;
+            }
+
+            document.getElementById('importResult').innerHTML = resultMessage;
             document.getElementById('jsonInput').value = '';
         }
 
@@ -684,13 +727,27 @@
                 </div>
                 <div class="grid-2">
                     <div class="form-group">
-                        <label>经度</label>
+                        <label>BD-09 经度</label>
                         <input type="number" step="0.000001" id="editLon" value="${camp.lon || ''}">
                     </div>
                     <div class="form-group">
-                        <label>纬度</label>
+                        <label>BD-09 纬度</label>
                         <input type="number" step="0.000001" id="editLat" value="${camp.lat || ''}">
                     </div>
+                </div>
+                <div class="grid-2">
+                    <div class="form-group">
+                        <label>GCJ-02 经度</label>
+                        <input type="number" step="0.000001" id="editGcj02Lon" value="${camp.gcj02_lon || ''}" readonly>
+                    </div>
+                    <div class="form-group">
+                        <label>GCJ-02 纬度</label>
+                        <input type="number" step="0.000001" id="editGcj02Lat" value="${camp.gcj02_lat || ''}" readonly>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>百度地图 UID</label>
+                    <input type="text" id="editBaiduUid" value="${camp.baidu_uid || ''}" placeholder="用于导航功能">
                 </div>
                 <div class="form-group">
                     <label>地址</label>
@@ -724,8 +781,24 @@
             camp.folder = document.getElementById('editFolder').value;
             camp.x = parseFloat(document.getElementById('editX').value) || null;
             camp.y = parseFloat(document.getElementById('editY').value) || null;
-            camp.lon = parseFloat(document.getElementById('editLon').value) || null;
-            camp.lat = parseFloat(document.getElementById('editLat').value) || null;
+            
+            const newLon = parseFloat(document.getElementById('editLon').value) || null;
+            const newLat = parseFloat(document.getElementById('editLat').value) || null;
+            
+            if (newLon && newLat) {
+                camp.lon = newLon;
+                camp.lat = newLat;
+                const gcj02 = bd09ToGcj02(newLon, newLat);
+                camp.gcj02_lon = gcj02.lon;
+                camp.gcj02_lat = gcj02.lat;
+            } else {
+                camp.lon = newLon;
+                camp.lat = newLat;
+                camp.gcj02_lon = null;
+                camp.gcj02_lat = null;
+            }
+            
+            camp.baidu_uid = document.getElementById('editBaiduUid').value || null;
             camp.address = document.getElementById('editAddress').value;
             camp.type = document.getElementById('editType').value;
             camp.price = document.getElementById('editPrice').value;
@@ -821,6 +894,12 @@
             allCamps.forEach(camp => {
                 if (!camp.name) issues.push(`ID ${camp.id}: 缺少名称`);
                 if (!camp.x || !camp.y) issues.push(`${camp.name}: 缺少坐标`);
+                if (camp.lon && camp.lat && !camp.gcj02_lon) {
+                    issues.push(`${camp.name}: 缺少 GCJ-02 坐标`);
+                }
+                if (!camp.baidu_uid) {
+                    issues.push(`${camp.name}: 缺少百度地图 UID`);
+                }
             });
 
             if (issues.length === 0) {
