@@ -1482,6 +1482,9 @@
             
             applyFilters();
             
+            renderRegionFilters();
+            renderRegionMarkers();
+            
             if (selectedRegion) {
                 const config = REGION_CONFIG[selectedRegion];
                 if (config) {
@@ -1661,6 +1664,23 @@
                 `;
                 marker.onclick = () => filterByRegion(selectedRegion);
                 markersLayer.appendChild(marker);
+            } else {
+                Object.keys(REGION_CONFIG).forEach(regionName => {
+                    const config = REGION_CONFIG[regionName];
+                    const markerX = panX + config.x * scale;
+                    const markerY = panY + config.y * scale;
+                    
+                    const marker = document.createElement('div');
+                    marker.className = 'region-marker';
+                    marker.style.left = markerX + 'px';
+                    marker.style.top = markerY + 'px';
+                    marker.innerHTML = `
+                        <div class="marker-dot"></div>
+                        <div class="marker-label">${regionName}</div>
+                    `;
+                    marker.onclick = () => filterByRegion(regionName);
+                    markersLayer.appendChild(marker);
+                });
             }
         }
 
@@ -1689,7 +1709,23 @@
             }, 450);
         }
 
+        function renderRegionFilters() {
+            const container = document.getElementById('regionFilters');
+            const regions = extractRegions();
+            const regionNames = Array.from(regions.keys()).sort();
+            
+            let html = `<button class="region-btn ${!selectedRegion ? 'active' : ''}" onclick="filterByRegion(null)">全部</button>`;
+            
+            regionNames.forEach(name => {
+                html += `<button class="region-btn ${selectedRegion === name ? 'active' : ''}" onclick="filterByRegion('${name}')">${name}</button>`;
+            });
+            
+            container.innerHTML = html;
+        }
+
         function setupEventListeners() {
+            renderRegionFilters();
+            
             const regionFilters = document.getElementById('regionFilters');
             if (regionFilters) {
                 let isScrolling = false;

@@ -19,85 +19,209 @@
             background: #f5f5f5;
             color: #333;
             min-height: 100vh;
+            overflow: hidden;
         }
 
         .container {
-            max-width: 1200px;
-            margin: 0 auto;
-            padding: 20px;
+            display: flex;
+            height: 100vh;
         }
 
-        .header {
+        .map-area {
+            flex: 1;
+            position: relative;
+            background: #F5F0E6;
+            overflow: hidden;
+            cursor: crosshair;
+        }
+
+        .map-transform {
+            position: absolute;
+            transform-origin: 0 0;
+            will-change: transform;
+        }
+
+        .map-image {
+            display: block;
+            user-select: none;
+            -webkit-user-drag: none;
+        }
+
+        .camp-marker {
+            position: absolute;
+            transform: translate(-50%, -50%);
+            cursor: pointer;
+            z-index: 50;
+        }
+
+        .camp-marker .marker-dot {
+            width: 16px;
+            height: 16px;
+            background: #3498DB;
+            border: 2px solid white;
+            border-radius: 50%;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+        }
+
+        .camp-marker:hover .marker-dot {
+            transform: scale(1.2);
+        }
+
+        .region-marker {
+            position: absolute;
+            cursor: pointer;
+            z-index: 60;
+            transform: translate(-50%, -100%);
+            white-space: nowrap;
+        }
+
+        .region-marker .marker-dot {
+            width: 14px;
+            height: 14px;
+            background: #E74C3C;
+            border: 2px solid white;
+            border-radius: 50%;
+            margin: 0 auto 4px;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+        }
+
+        .region-marker .marker-label {
+            font-size: 12px;
+            font-weight: 600;
+            color: #2C3E50;
+            text-align: center;
+            background: rgba(255,255,255,0.9);
+            padding: 2px 6px;
+            border-radius: 4px;
+        }
+
+        .region-marker:hover .marker-dot {
+            transform: scale(1.2);
+        }
+
+        .sidebar {
+            width: 500px;
+            background: white;
+            box-shadow: -4px 0 20px rgba(0,0,0,0.1);
+            display: flex;
+            flex-direction: column;
+            z-index: 200;
+            overflow: hidden;
+        }
+
+        .sidebar-header {
+            padding: 20px;
             background: linear-gradient(135deg, #2C3E50 0%, #34495E 100%);
             color: white;
-            padding: 30px;
-            border-radius: 15px;
-            margin-bottom: 30px;
-            text-align: center;
+            flex-shrink: 0;
         }
 
-        .header h1 {
-            font-size: 28px;
-            margin-bottom: 8px;
+        .sidebar-header h1 {
+            font-size: 20px;
+            margin-bottom: 4px;
         }
 
-        .header p {
+        .sidebar-header p {
+            font-size: 12px;
             opacity: 0.9;
-            font-size: 14px;
+        }
+
+        .sidebar-content {
+            flex: 1;
+            overflow-y: auto;
+            padding: 16px;
         }
 
         .stats {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 20px;
-            margin-bottom: 30px;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+            margin-bottom: 16px;
         }
 
         .stat-card {
-            background: white;
-            padding: 25px;
-            border-radius: 12px;
+            background: #f8f9fa;
+            padding: 12px;
+            border-radius: 8px;
             text-align: center;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
         }
 
         .stat-number {
-            font-size: 36px;
+            font-size: 24px;
             font-weight: 700;
             color: #3498DB;
-            margin-bottom: 5px;
         }
 
         .stat-label {
-            font-size: 14px;
+            font-size: 11px;
             color: #7F8C8D;
         }
 
         .section {
-            background: white;
-            padding: 25px;
-            border-radius: 12px;
-            margin-bottom: 30px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 16px;
+            margin-bottom: 16px;
         }
 
         .section-title {
-            font-size: 18px;
+            font-size: 14px;
             font-weight: 600;
-            margin-bottom: 20px;
-            padding-bottom: 10px;
-            border-bottom: 2px solid #e9ecef;
-            display: flex;
-            align-items: center;
-            gap: 10px;
+            margin-bottom: 12px;
+            color: #2C3E50;
         }
 
         .import-area {
-            border: 3px dashed #dee2e6;
-            border-radius: 12px;
-            padding: 40px;
+            border: 2px dashed #dee2e6;
+            border-radius: 10px;
+            padding: 24px;
             text-align: center;
-            margin-bottom: 20px;
+            margin-bottom: 16px;
+            transition: all 0.3s;
+            cursor: pointer;
+        }
+
+        .import-area:hover {
+            border-color: #3498DB;
+            background: #EBF5FB;
+        }
+
+        .click-hint {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0,0,0,0.8);
+            color: white;
+            padding: 12px 24px;
+            border-radius: 30px;
+            font-size: 14px;
+            z-index: 1000;
+            display: none;
+        }
+
+        .click-hint.show {
+            display: block;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.7; }
+        }
+
+        .map-hint {
+            position: absolute;
+            top: 10px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0,0,0,0.7);
+            color: white;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 12px;
+            z-index: 300;
+        }
             transition: all 0.3s;
             cursor: pointer;
         }
@@ -383,98 +507,128 @@
 </head>
 <body>
     <div class="container">
-        <div class="header">
-            <h1>🏕️ 桂林露营地管理工具</h1>
-            <p>管理营地数据、导入导出、编辑删除</p>
+        <div class="map-area" id="mapArea">
+            <div class="map-transform" id="mapTransform">
+                <img src="../assets/images/map-main.png" alt="地图" class="map-image" id="mapImage">
+            </div>
+            <div class="map-hint" id="mapHint">🗺️ 点击地图可设置坐标</div>
         </div>
 
-        <div class="stats" id="statsSection">
-            <div class="stat-card">
-                <div class="stat-number" id="statTotal">-</div>
-                <div class="stat-label">总营地数</div>
+        <div class="sidebar">
+            <div class="sidebar-header">
+                <h1>🏕️ 桂林露营地管理工具</h1>
+                <p>点击地图设置营地和行政区坐标</p>
             </div>
-            <div class="stat-card">
-                <div class="stat-number" id="statRegions">-</div>
-                <div class="stat-label">行政区数</div>
-            </div>
-            <div class="stat-card">
-                <div class="stat-number" id="statLastUpdate">-</div>
-                <div class="stat-label">最后更新</div>
-            </div>
-        </div>
 
-        <div class="section">
-            <div class="section-title">📥 导入新数据</div>
-            
-            <div class="import-area" id="importArea" onclick="document.getElementById('fileInput').click()">
-                <div class="import-icon">📁</div>
-                <div class="import-text">点击上传 JSON 文件</div>
-                <div class="import-hint">或拖拽文件到此处</div>
-            </div>
-            <input type="file" id="fileInput" accept=".json" style="display: none;" onchange="handleFileUpload(event)">
+            <div class="sidebar-content">
+                <div class="stats" id="statsSection">
+                    <div class="stat-card">
+                        <div class="stat-number" id="statTotal">-</div>
+                        <div class="stat-label">营地数</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-number" id="statRegions">-</div>
+                        <div class="stat-label">行政区</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-number" id="statWithCoords">-</div>
+                        <div class="stat-label">已定位</div>
+                    </div>
+                </div>
 
-            <div style="text-align: center; margin: 15px 0; color: #7F8C8D;">— 或者 —</div>
+                <div class="section">
+                    <div class="section-title">📥 导入数据</div>
+                    
+                    <div class="import-area" id="importArea" onclick="document.getElementById('fileInput').click()">
+                        <div style="font-size: 32px; margin-bottom: 8px;">📁</div>
+                        <div style="font-size: 14px; color: #6c757d;">点击上传 JSON 文件</div>
+                        <div style="font-size: 12px; color: #adb5bd;">或拖拽文件到此处</div>
+                    </div>
+                    <input type="file" id="fileInput" accept=".json" style="display: none;" onchange="handleFileUpload(event)">
 
-            <textarea id="jsonInput" placeholder='粘贴 JSON 数据，例如：
+                    <textarea id="jsonInput" placeholder='粘贴 JSON 数据，例如：
 [
-  {"name": "营地名称", "lon": 110.5231, "lat": 24.7832, "folder": "桂林市/阳朔县"}
-]'></textarea>
+  {"name": "营地名称", "x": 1400, "y": 2600, "folder": "桂林市/阳朔县"}
+]' style="height: 80px; margin-bottom: 10px;"></textarea>
 
-            <button class="btn btn-primary" onclick="parseJsonInput()">
-                📋 解析并添加数据
-            </button>
+                    <button class="btn btn-primary" onclick="parseJsonInput()" style="width: 100%; margin-bottom: 10px;">
+                        📋 解析并添加
+                    </button>
 
-            <div id="importResult"></div>
-        </div>
+                    <div id="importResult"></div>
+                </div>
 
-        <div class="section">
-            <div class="section-title">📋 营地列表</div>
-            
-            <input type="text" class="search-box" id="searchInput" placeholder="🔍 搜索营地名称或行政区..." oninput="filterCamps()">
+                <div class="section">
+                    <div class="section-title">🗺️ 行政区管理</div>
+                    
+                    <div class="form-group">
+                        <label>行政区名称</label>
+                        <input type="text" id="regionName" placeholder="例：阳朔县">
+                    </div>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                        <div class="form-group">
+                            <label>X 坐标</label>
+                            <input type="number" id="regionX" placeholder="点击地图获取" readonly>
+                        </div>
+                        <div class="form-group">
+                            <label>Y 坐标</label>
+                            <input type="number" id="regionY" placeholder="点击地图获取" readonly>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>缩放级别 (scale)</label>
+                        <input type="number" id="regionScale" value="4" min="1" max="20" step="0.5">
+                    </div>
+                    <button class="btn btn-primary" onclick="saveRegion()" style="width: 100%; margin-bottom: 10px;">
+                        💾 保存行政区
+                    </button>
+                    
+                    <div style="max-height: 150px; overflow-y: auto;" id="regionList"></div>
+                    
+                    <button class="btn btn-secondary" onclick="exportRegionConfig()" style="width: 100%; margin-top: 10px;">
+                        📋 导出配置
+                    </button>
+                    
+                    <div id="regionExportResult"></div>
+                </div>
 
-            <div style="max-height: 500px; overflow-y: auto;">
-                <table class="camp-table">
-                    <thead>
-                        <tr>
-                            <th>名称</th>
-                            <th>行政区</th>
-                            <th>坐标 (X, Y)</th>
-                            <th>BD-09 坐标</th>
-                            <th>GCJ-02 坐标</th>
-                            <th>百度 UID</th>
-                            <th>操作</th>
-                        </tr>
-                    </thead>
-                    <tbody id="campTableBody">
-                        <tr><td colspan="7" class="loading">加载中...</td></tr>
-                    </tbody>
-                </table>
+                <div class="section">
+                    <div class="section-title">📋 营地列表</div>
+                    
+                    <input type="text" class="search-box" id="searchInput" placeholder="🔍 搜索..." oninput="filterCamps()">
+                    
+                    <div style="max-height: 200px; overflow-y: auto;">
+                        <table class="camp-table" style="font-size: 11px;">
+                            <thead>
+                                <tr>
+                                    <th>名称</th>
+                                    <th>X</th>
+                                    <th>Y</th>
+                                    <th>操作</th>
+                                </tr>
+                            </thead>
+                            <tbody id="campTableBody">
+                                <tr><td colspan="4" class="loading">加载中...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <div class="section">
+                    <button class="btn btn-success" onclick="exportAllData()" style="width: 100%;">
+                        📥 导出全部数据
+                    </button>
+                    <button class="btn btn-secondary" onclick="saveRegionData()" style="width: 100%; margin-top: 8px;">
+                        💾 保存到文件
+                    </button>
+                    <div id="exportResult"></div>
+                </div>
             </div>
         </div>
+    </div>
 
-        <div class="section">
-            <div class="section-title">📤 导出数据</div>
-            
-            <button class="btn btn-success" onclick="exportAllData()">
-                📥 导出全部营地数据 (JSON)
-            </button>
-
-            <div id="exportResult"></div>
-        </div>
-
-        <div class="section">
-            <div class="section-title">🔧 数据维护</div>
-            
-            <button class="btn btn-secondary" onclick="downloadTemplate()">
-                📝 下载导入模板
-            </button>
-            
-            <button class="btn btn-secondary" onclick="validateData()">
-                ✅ 数据校验
-            </button>
-            
-            <div id="validationResult"></div>
-        </div>
+    <div class="click-hint" id="clickHint">
+        👆 点击地图获取坐标
     </div>
 
     <div class="modal" id="editModal">
@@ -491,8 +645,193 @@
     <script>
         let allCamps = [];
         let regions = {};
+        let regionConfig = {};
         let filteredCamps = [];
         let editingCampId = null;
+        
+        let mapWidth = 0;
+        let mapHeight = 0;
+        let scale = 1;
+        let panX = 0;
+        let panY = 0;
+        let isDragging = false;
+        let lastX, lastY;
+
+        function initMap() {
+            const mapImage = document.getElementById('mapImage');
+            const mapTransform = document.getElementById('mapTransform');
+            const mapArea = document.getElementById('mapArea');
+            
+            if (!mapImage) return;
+            
+            mapImage.onload = function() {
+                mapWidth = mapImage.naturalWidth;
+                mapHeight = mapImage.naturalHeight;
+                
+                const mapRect = mapArea.getBoundingClientRect();
+                const baseScale = Math.min(mapRect.width / mapWidth, mapRect.height / mapHeight) * 0.8;
+                
+                scale = baseScale;
+                panX = (mapRect.width - mapWidth * scale) / 2;
+                panY = (mapRect.height - mapHeight * scale) / 2;
+                
+                updateTransform();
+                fitToView();
+                renderMarkers();
+            };
+            
+            if (mapImage.complete) {
+                mapImage.dispatchEvent(new Event('load'));
+            }
+            
+            mapArea.addEventListener('mousedown', startDrag);
+            mapArea.addEventListener('mousemove', drag);
+            mapArea.addEventListener('mouseup', endDrag);
+            mapArea.addEventListener('mouseleave', endDrag);
+            mapArea.addEventListener('wheel', handleZoom);
+            mapArea.addEventListener('click', handleMapClick);
+            
+            document.addEventListener('keydown', handleKeyboard);
+        }
+
+        function updateTransform() {
+            const mapTransform = document.getElementById('mapTransform');
+            if (mapTransform) {
+                mapTransform.style.transform = `translate(${panX}px, ${panY}px) scale(${scale})`;
+            }
+        }
+
+        function fitToView() {
+            const mapArea = document.getElementById('mapArea');
+            const rect = mapArea.getBoundingClientRect();
+            scale = Math.min(rect.width / mapWidth, rect.height / mapHeight) * 0.9;
+            panX = (rect.width - mapWidth * scale) / 2;
+            panY = (rect.height - mapHeight * scale) / 2;
+            updateTransform();
+        }
+
+        function startDrag(e) {
+            if (e.target.closest('.camp-marker') || e.target.closest('.region-marker')) return;
+            isDragging = true;
+            lastX = e.clientX;
+            lastY = e.clientY;
+            document.getElementById('mapArea').style.cursor = 'grabbing';
+        }
+
+        function drag(e) {
+            if (!isDragging) return;
+            const dx = e.clientX - lastX;
+            const dy = e.clientY - lastY;
+            panX += dx;
+            panY += dy;
+            lastX = e.clientX;
+            lastY = e.clientY;
+            updateTransform();
+        }
+
+        function endDrag() {
+            isDragging = false;
+            document.getElementById('mapArea').style.cursor = 'crosshair';
+        }
+
+        function handleZoom(e) {
+            e.preventDefault();
+            const delta = e.deltaY > 0 ? 0.9 : 1.1;
+            const newScale = Math.max(0.1, Math.min(10, scale * delta));
+            
+            const mapArea = document.getElementById('mapArea');
+            const rect = mapArea.getBoundingClientRect();
+            const mouseX = e.clientX - rect.left;
+            const mouseY = e.clientY - rect.top;
+            
+            panX = mouseX - (mouseX - panX) * (newScale / scale);
+            panY = mouseY - (mouseY - panY) * (newScale / scale);
+            scale = newScale;
+            
+            updateTransform();
+        }
+
+        function handleMapClick(e) {
+            if (isDragging) return;
+            if (e.target.closest('.camp-marker') || e.target.closest('.region-marker')) return;
+            
+            const mapArea = document.getElementById('mapArea');
+            const rect = mapArea.getBoundingClientRect();
+            const x = (e.clientX - rect.left - panX) / scale;
+            const y = (e.clientY - rect.top - panY) / scale;
+            
+            document.getElementById('regionX').value = Math.round(x);
+            document.getElementById('regionY').value = Math.round(y);
+            
+            const clickHint = document.getElementById('clickHint');
+            clickHint.textContent = `📍 坐标: X=${Math.round(x)}, Y=${Math.round(y)}`;
+            clickHint.classList.add('show');
+            setTimeout(() => clickHint.classList.remove('show'), 2000);
+        }
+
+        function handleKeyboard(e) {
+            if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+            
+            const zoomSpeed = 1.2;
+            if (e.key === '+' || e.key === '=') {
+                scale *= zoomSpeed;
+                updateTransform();
+            } else if (e.key === '-') {
+                scale /= zoomSpeed;
+                updateTransform();
+            } else if (e.key === '0') {
+                fitToView();
+            }
+        }
+
+        function renderMarkers() {
+            renderCampMarkers();
+            renderRegionMarkers();
+        }
+
+        function renderCampMarkers() {
+            const mapArea = document.getElementById('mapArea');
+            mapArea.querySelectorAll('.camp-marker').forEach(el => el.remove());
+            
+            allCamps.forEach((camp, index) => {
+                if (camp.x === undefined || camp.y === undefined) return;
+                
+                const marker = document.createElement('div');
+                marker.className = 'camp-marker';
+                marker.style.left = (panX + camp.x * scale) + 'px';
+                marker.style.top = (panY + camp.y * scale) + 'px';
+                marker.innerHTML = `<div class="marker-dot" title="${camp.name}"></div>`;
+                marker.onclick = (e) => {
+                    e.stopPropagation();
+                    editCamp(index);
+                };
+                mapArea.appendChild(marker);
+            });
+        }
+
+        function renderRegionMarkers() {
+            const mapArea = document.getElementById('mapArea');
+            mapArea.querySelectorAll('.region-marker').forEach(el => el.remove());
+            
+            Object.keys(regionConfig).forEach(name => {
+                const config = regionConfig[name];
+                if (config.x === undefined || config.y === undefined) return;
+                
+                const marker = document.createElement('div');
+                marker.className = 'region-marker';
+                marker.style.left = (panX + config.x * scale) + 'px';
+                marker.style.top = (panY + config.y * scale) + 'px';
+                marker.innerHTML = `
+                    <div class="marker-dot"></div>
+                    <div class="marker-label">${name}</div>
+                `;
+                marker.onclick = (e) => {
+                    e.stopPropagation();
+                    loadRegionToForm(name);
+                };
+                mapArea.appendChild(marker);
+            });
+        }
 
         function bd09ToGcj02(bdLon, bdLat) {
             const x = bdLon - 0.0065;
@@ -508,6 +847,7 @@
         async function init() {
             await loadData();
             loadRegions();
+            initMap();
         }
 
         async function loadData() {
@@ -533,9 +873,100 @@
                 .then(res => res.json())
                 .then(data => {
                     regions = data.regions || {};
+                    regionConfig = data.regions || {};
                     document.getElementById('statRegions').textContent = Object.keys(regions).length;
+                    renderRegionList();
                 })
                 .catch(err => console.error('加载行政区配置失败:', err));
+        }
+
+        function renderRegionList() {
+            const container = document.getElementById('regionList');
+            const regionNames = Object.keys(regionConfig).sort();
+            
+            if (regionNames.length === 0) {
+                container.innerHTML = '<p style="color: #6c757d; text-align: center; padding: 20px;">暂无行政区数据</p>';
+                return;
+            }
+            
+            container.innerHTML = regionNames.map(name => {
+                const config = regionConfig[name];
+                return `
+                    <div class="camp-item" style="cursor: pointer; margin-bottom: 8px;" onclick="loadRegionToForm('${name}')">
+                        <div style="flex: 1;">
+                            <div style="font-weight: 600;">${name}</div>
+                            <div style="font-size: 11px; color: #6c757d;">
+                                X: ${Math.round(config.x)} Y: ${Math.round(config.y)} | Scale: ${config.scale}x
+                            </div>
+                        </div>
+                        <button class="btn-small btn-delete" onclick="event.stopPropagation(); deleteRegion('${name}')">🗑️</button>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function loadRegionToForm(name) {
+            const config = regionConfig[name];
+            document.getElementById('regionName').value = name;
+            document.getElementById('regionX').value = Math.round(config.x);
+            document.getElementById('regionY').value = Math.round(config.y);
+            document.getElementById('regionScale').value = config.scale;
+        }
+
+        function saveRegion() {
+            const name = document.getElementById('regionName').value.trim();
+            const x = parseFloat(document.getElementById('regionX').value);
+            const y = parseFloat(document.getElementById('regionY').value);
+            const scale = parseFloat(document.getElementById('regionScale').value) || 3;
+            
+            if (!name) {
+                alert('请输入行政区名称');
+                return;
+            }
+            
+            if (isNaN(x) || isNaN(y)) {
+                alert('请输入有效的坐标');
+                return;
+            }
+            
+            regionConfig[name] = { x, y, scale };
+            renderRegionList();
+            renderRegionMarkers();
+            
+            document.getElementById('regionName').value = '';
+            document.getElementById('regionX').value = '';
+            document.getElementById('regionY').value = '';
+            document.getElementById('regionScale').value = '3';
+            
+            alert('✅ 行政区已保存！');
+        }
+
+        function deleteRegion(name) {
+            if (!confirm(`确定要删除行政区"${name}"吗？`)) return;
+            
+            delete regionConfig[name];
+            renderRegionList();
+            renderRegionMarkers();
+            
+            alert('✅ 行政区已删除！');
+        }
+
+        function exportRegionConfig() {
+            const configStr = JSON.stringify(regionConfig, null, 4);
+            
+            document.getElementById('regionExportResult').innerHTML = `
+                <div class="export-section">${configStr}</div>
+                <button class="btn btn-success" style="margin-top: 15px;" onclick="copyRegionConfig()">
+                    📋 复制到剪贴板
+                </button>
+            `;
+        }
+
+        function copyRegionConfig() {
+            const configStr = JSON.stringify(regionConfig, null, 4);
+            navigator.clipboard.writeText(configStr)
+                .then(() => alert('✅ 已复制到剪贴板！'))
+                .catch(() => alert('❌ 复制失败'));
         }
 
         function updateStats() {
@@ -543,6 +974,9 @@
             
             const folders = new Set(allCamps.map(c => c.folder).filter(Boolean));
             document.getElementById('statRegions').textContent = folders.size;
+            
+            const withCoords = allCamps.filter(c => c.x !== undefined && c.y !== undefined).length;
+            document.getElementById('statWithCoords').textContent = withCoords;
             
             document.getElementById('statLastUpdate').textContent = new Date().toLocaleDateString('zh-CN');
         }
@@ -864,6 +1298,24 @@
             navigator.clipboard.writeText(JSON.stringify(data, null, 2))
                 .then(() => alert('✅ 已复制到剪贴板！'))
                 .catch(() => alert('❌ 复制失败，请手动复制'));
+        }
+
+        function saveRegionData() {
+            const data = {
+                version: "1.0",
+                lastUpdated: new Date().toISOString().split('T')[0],
+                camps: allCamps
+            };
+            
+            const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `camps_export_${new Date().toISOString().split('T')[0]}.json`;
+            a.click();
+            URL.revokeObjectURL(url);
+            
+            document.getElementById('exportResult').innerHTML = '<p style="color: #27AE60; margin-top: 10px;">✅ 数据已导出！请手动保存到 data/camps.json</p>';
         }
 
         function downloadTemplate() {
